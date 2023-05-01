@@ -55,8 +55,8 @@ if __name__ == '__main__':
     test_data.as_numpy_iterator().next()
 
     # We will take 20% of the training data to be the validation set.
-    training_size = int(len(training_data) * .8)
-    validation_size = int(len(training_data) * .2)
+    training_size = int(len(training_data) * .9)
+    validation_size = int(len(training_data) * .1)
 
     # Separate the training data into the training images and the validation images.
     training_images = training_data.take(training_size)
@@ -94,45 +94,61 @@ if __name__ == '__main__':
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=model_logs_dir)
 
     # Train the CNN model that was constructed above.
-    model_outputs = model.fit(training_images, epochs=20, validation_data=validation_images, callbacks=[tensorboard_callback])
-
-    # Plot the training loss and validation loss during training.
-    fig = plt.figure()
-    plt.plot(model_outputs.history['loss'], color='teal', label='loss')
-    plt.plot(model_outputs.history['val_loss'], color='orange', label='val_loss')
-    fig.suptitle('Loss', fontsize=20)
-    plt.legend(loc="upper left")
-    plt.show()
-
-    # Plot the training accuracy and the validation accuracy during training.
-    fig = plt.figure()
-    plt.plot(model_outputs.history['accuracy'], color='teal', label='accuracy')
-    plt.plot(model_outputs.history['val_accuracy'], color='orange', label='val_accuracy')
-    fig.suptitle('Accuracy', fontsize=20)
-    plt.legend(loc="upper left")
-    plt.show()
+    # model_outputs = model.fit(training_images, epochs=15, validation_data=validation_images, callbacks=[tensorboard_callback])
+    #
+    # # Plot the training loss and validation loss during training.
+    # fig = plt.figure()
+    # plt.plot(model_outputs.history['loss'], color='teal', label='loss')
+    # plt.plot(model_outputs.history['val_loss'], color='orange', label='val_loss')
+    # fig.suptitle('Loss', fontsize=20)
+    # plt.legend(loc="upper left")
+    # plt.show()
+    #
+    # # Plot the training accuracy and the validation accuracy during training.
+    # fig = plt.figure()
+    # plt.plot(model_outputs.history['accuracy'], color='teal', label='accuracy')
+    # plt.plot(model_outputs.history['val_accuracy'], color='orange', label='val_accuracy')
+    # fig.suptitle('Accuracy', fontsize=20)
+    # plt.legend(loc="upper left")
+    # plt.show()
 
     # # Load a previous model that was already trained.
-    # # existing_model = load_model(os.path.join(existing_models_dir, 'pneu_classifier.h5'))
+    existing_model = load_model(os.path.join(existing_models_dir, 'FinalRun2.h5'))
 
     # Predict the identity of the test data using the trained model.
     pre = Precision()
     re = Recall()
     acc = BinaryAccuracy()
+    act_norm_pred_norm = 0
+    act_norm_pred_pneu = 0
+    act_pneu_pred_norm = 0
+    act_pneu_pred_pneu = 0
     for batch in test_data.as_numpy_iterator():
         X, y = batch
-        yhat = model.predict(X)
+        yhat = existing_model.predict(X)
+        for i in range(len(y)):
+            if y[i] == 0:
+                if yhat[i] < 0.5:
+                    act_norm_pred_norm = act_norm_pred_norm + 1;
+                else:
+                    act_norm_pred_pneu = act_norm_pred_pneu + 1;
+            if y[i] == 1:
+                if yhat[i] > 0.5:
+                    act_pneu_pred_pneu = act_pneu_pred_pneu + 1;
+                else:
+                    act_pneu_pred_norm = act_pneu_pred_norm + 1;
         pre.update_state(y, yhat)
         re.update_state(y, yhat)
         acc.update_state(y, yhat)
     # Print the precision, recall, and accuracy results from predicting the test data.
     print(pre.result(), re.result(), acc.result())
+    print(act_norm_pred_norm, act_norm_pred_pneu, act_pneu_pred_pneu, act_pneu_pred_norm)
 
     # Save the model that was just trained.
-    model.save(os.path.join(existing_models_dir, 'FinalRun1.h5'))
+    # model.save(os.path.join(existing_models_dir, 'FinalRun4.h5'))
 
     # # Generate a plot of the model.
-    # model_img_file = r'C:\Users\Samuel Washburn\Documents\JHU Masters\Spring 2023\Mach Learning\ML PROJECT\existing_models\model_pic.png'
+    # model_img_file = r'C:\Users\Samuel Washburn\Docum ents\JHU Masters\Spring 2023\Mach Learning\ML PROJECT\existing_models\model_pic.png'
     # plot_model(model, to_file=model_img_file, show_shapes=True)
 
 
